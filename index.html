@@ -26,16 +26,16 @@
             '#FF1493', // Deep Pink
             '#7B00FF'  // Electric Purple
         ];
-        const TRAIL_ALPHA = 12;  // Higher = faster fade (range: 8-20)
+        const TRAIL_ALPHA = 8;  // Lower value = slower fade  // Higher = faster fade (range: 8-20)
         const COLS = 70;         // Grid columns
         const ROWS = 50;         // Grid rows
-        const Z_VELOCITY = 0.004; // Flow field evolution speed
-        const MIN_LEN = 2;      // Minimum particle line length
-        const MAX_LEN = 8;      // Maximum particle line length
+        const Z_VELOCITY = 0.002;  // Slower flow field evolution for smoother changes // Flow field evolution speed
+        const MIN_LEN = 3;  // Slightly longer minimum line length      // Minimum particle line length
+        const MAX_LEN = 12;  // Longer maximum line length      // Maximum particle line length
         
         let particles = [];
         let particleCount = 1000;
-        let noiseScale = 1 / (COLS * 0.7); // Adjusted noise scale based on grid
+        let noiseScale = 1 / (COLS * 1.2);  // Gentler noise scale for smoother flow // Adjusted noise scale based on grid
         
         function setup() {
             createCanvas(800, 600);
@@ -63,7 +63,7 @@
                 this.pos = createVector(random(width), random(height));
                 this.vel = createVector(0, 0);
                 this.acc = createVector(0, 0);
-                this.maxSpeed = 2;
+                this.maxSpeed = 1.5;  // Reduced max speed for smoother movement  // Slightly slower for smoother movement
                 this.color = color(random(PALETTE));
             }
             
@@ -77,7 +77,7 @@
                 
                 // Create force based on noise angle
                 let force = p5.Vector.fromAngle(angle);
-                force.mult(0.1);
+                force.mult(0.05);  // Gentler force application for smoother acceleration
                 
                 // Add mouse repulsion
                 let mousePos = createVector(mouseX, mouseY);
@@ -96,6 +96,9 @@
                 
                 // Apply force
                 this.acc.add(force);
+                // Interpolate velocity for smoother movement
+                let targetVel = p5.Vector.add(this.vel, this.acc);
+                this.vel = p5.Vector.lerp(this.vel, targetVel, 0.3);  // Smooth acceleration
                 this.vel.add(this.acc);
                 this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
@@ -110,7 +113,7 @@
             
             display() {
                 stroke(this.color);
-                strokeWeight(2);
+                strokeWeight(1.5);  // Thinner lines for smoother appearance
                 
                 // Draw a line segment instead of a point
                 const len = random(MIN_LEN, MAX_LEN);
