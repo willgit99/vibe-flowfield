@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Field</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Visual Config
+        const PALETTE = [
+            '#FF00FF', // Neon Pink
+            '#00FF8F', // Neon Mint
+            '#4D4DFF', // Deep Neon Blue
+            '#FF1493', // Deep Pink
+            '#7B00FF'  // Electric Purple
+        ];
+        const TRAIL_ALPHA = 12;  // Higher = faster fade (range: 8-20)
+        const COLS = 70;         // Grid columns
+        const ROWS = 50;         // Grid rows
+        const Z_VELOCITY = 0.004; // Flow field evolution speed
+        const MIN_LEN = 2;      // Minimum particle line length
+        const MAX_LEN = 8;      // Maximum particle line length
+        
+        let particles = [];
+        let particleCount = 1000;
+        let noiseScale = 1 / (COLS * 0.7); // Adjusted noise scale based on grid
+        
+        function setup() {
+            createCanvas(800, 600);
+            background(0);
+            
+            // Initialize particles
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function draw() {
+            // Add a slight fade effect
+            background(0, TRAIL_ALPHA);
+            
+            // Update and display particles
+            particles.forEach(p => {
+                p.update();
+                p.display();
+            });
+        }
+
+        class Particle {
+            constructor() {
+                this.pos = createVector(random(width), random(height));
+                this.vel = createVector(0, 0);
+                this.acc = createVector(0, 0);
+                this.maxSpeed = 2;
+                this.color = color(random(PALETTE));
+            }
+            
+            update() {
+                // Get flow field angle based on noise
+                let angle = noise(
+                    this.pos.x * noiseScale, 
+                    this.pos.y * noiseScale, 
+                    frameCount * Z_VELOCITY
+                ) * TWO_PI * 2;
+                
+                // Create force based on noise angle
+                let force = p5.Vector.fromAngle(angle);
+                force.mult(0.1);
+                
+                // Add mouse repulsion
+                let mousePos = createVector(mouseX, mouseY);
+                let distToMouse = p5.Vector.dist(this.pos, mousePos);
+                let repulsionRadius = 100; // Radius of mouse influence
+                
+                if (distToMouse < repulsionRadius) {
+                    // Calculate repulsion direction
+                    let repulsion = p5.Vector.sub(this.pos, mousePos);
+                    repulsion.normalize();
+                    // Strength increases as particles get closer to mouse
+                    let strength = map(distToMouse, 0, repulsionRadius, 0.5, 0);
+                    repulsion.mult(strength);
+                    force.add(repulsion);
+                }
+                
+                // Apply force
+                this.acc.add(force);
+                this.vel.add(this.acc);
+                this.vel.limit(this.maxSpeed);
+                this.pos.add(this.vel);
+                this.acc.mult(0);
+                
+                // Wrap around edges
+                if (this.pos.x > width) this.pos.x = 0;
+                if (this.pos.x < 0) this.pos.x = width;
+                if (this.pos.y > height) this.pos.y = 0;
+                if (this.pos.y < 0) this.pos.y = height;
+            }
+            
+            display() {
+                stroke(this.color);
+                strokeWeight(2);
+                
+                // Draw a line segment instead of a point
+                const len = random(MIN_LEN, MAX_LEN);
+                const endX = this.pos.x + this.vel.x * len;
+                const endY = this.pos.y + this.vel.y * len;
+                line(this.pos.x, this.pos.y, endX, endY);
+            }
+        }
+    </script>
+</body>
+</html>
